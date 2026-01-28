@@ -5,7 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
+import * as notificationService from './notification.service';
 
 // Types
 export interface CreateCommentInput {
@@ -47,6 +48,22 @@ export const createComment = async (data: CreateCommentInput) => {
             }
         }
     });
+
+    // Create notification for post author
+    const postForNotification = await prisma.post.findUnique({
+        where: { id: data.postId },
+        select: { authorId: true }
+    });
+
+    if (postForNotification) {
+        await notificationService.createNotification({
+            recipientId: postForNotification.authorId,
+            senderId: data.authorId,
+            type: 'COMMENT',
+            postId: data.postId,
+            content: data.content.substring(0, 50) + (data.content.length > 50 ? '...' : '')
+        });
+    }
 
     return comment;
 };

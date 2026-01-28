@@ -17,6 +17,7 @@ import likeRoutes from './routes/like.routes';
 import uploadRoutes from './routes/upload.routes';
 import profileRoutes from './routes/profile.routes';
 import socialAuthRoutes from './routes/social-auth.routes';
+import notificationRoutes from './routes/notification.routes';
 import * as commentController from './controllers/comment.controller';
 
 // Import Passport
@@ -94,6 +95,7 @@ app.use('/api/posts', commentRoutes);  // Comment routes nested under /api/posts
 app.use('/api/posts', likeRoutes);     // Like routes nested under /api/posts
 app.use('/api/upload', uploadRoutes);  // File upload routes
 app.use('/api/profile', profileRoutes); // User profile routes
+app.use('/api/notifications', notificationRoutes); // Notification routes
 
 // Standalone comment routes for update/delete
 import { authMiddleware } from './middlewares/auth.middleware';

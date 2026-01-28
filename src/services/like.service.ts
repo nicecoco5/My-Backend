@@ -5,7 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
+import * as notificationService from './notification.service';
 
 /**
  * Toggle like on a post
@@ -45,6 +46,23 @@ export const toggleLike = async (postId: string, userId: string) => {
                 userId
             }
         });
+
+        // Create notification for post author
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { authorId: true }
+        });
+
+        if (post) {
+            await notificationService.createNotification({
+                recipientId: post.authorId,
+                senderId: userId,
+                type: 'LIKE',
+                postId: postId,
+                content: 'Liked your post'
+            });
+        }
+
         return { liked: true };
     }
 };

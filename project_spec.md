@@ -225,6 +225,13 @@ npm run prisma:migrate   # Run database migrations
 - [x] Redis caching service (graceful degradation)
 - [x] User profile (bio, profileImage, nickname update)
 - [x] Social login (Google OAuth, Kakao OAuth)
+- [x] **GitHub Deployment** (Source code version control)
+
+### 📂 Repositories
+
+| Type | URL |
+|------|-----|
+| GitHub | https://github.com/nicecoco5/My-Backend |
 
 ---
 

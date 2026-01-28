@@ -29,6 +29,8 @@ model User {
   posts                    Post[]
   comments                 Comment[]
   likes                    Like[]
+  notificationsReceived    Notification[]           @relation("NotificationRecipient")
+  notificationsSent        Notification[]           @relation("NotificationSender")
 
   @@unique([socialProvider, socialId])
 }
@@ -79,8 +81,9 @@ model Post {
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  comments  Comment[]
-  likes     Like[]
+  comments      Comment[]
+  likes         Like[]
+  notifications Notification[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -113,3 +116,20 @@ model Like {
   @@index([userId])
 }
 
+
+model Notification {
+  id         String   @id @default(uuid())
+  recipientId String
+  recipient  User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  senderId   String?
+  sender     User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+  type       String   // COMMENT, REPLY, LIKE
+  postId     String?
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  content    String?  // Optional notification content
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([createdAt])
+}

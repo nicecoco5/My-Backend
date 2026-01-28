@@ -891,6 +891,11 @@ KAKAO_CLIENT_SECRET="your-kakao-client-secret"
 | 14 | Redis 캐싱 | ✅ |
 | 15 | 사용자 프로필 | ✅ |
 | 16 | 소셜 로그인 | ✅ |
+| 17 | GitHub 배포 | ✅ |
+| 17 | 알림 시스템 | ✅ |
+
+### 📂 GitHub Repository
+**URL**: [https://github.com/nicecoco5/My-Backend](https://github.com/nicecoco5/My-Backend)
 
 ### 📍 총 API 엔드포인트: 33개
 
