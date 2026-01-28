@@ -1,6 +1,9 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import hpp from 'hpp';
 import morgan from 'morgan';
+import logger, { stream } from './utils/logger';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
@@ -8,6 +11,10 @@ import path from 'path';
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Validate environment variables
+import { validateEnv } from './config/env.validator';
+validateEnv();
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -32,6 +39,9 @@ import { swaggerSpec } from './config/swagger';
 // Import Redis service
 import { initRedis, isRedisConnected } from './services/redis.service';
 
+// Initialize Metrics Middleware
+import { metricsMiddleware, getMetrics, metricsContentType } from './middlewares/metrics.middleware';
+
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
@@ -43,8 +53,15 @@ app.use(cors({
     credentials: true  // Allow cookies to be sent
 }));
 
-// HTTP request logging
-app.use(morgan('dev'));
+// Set security HTTP headers
+app.use(helmet());
+
+// Prevent http param pollution
+app.use(hpp());
+
+// Use Helper stream for monitoring
+// Combined format outputs standard Apache combined log format
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream }));
 
 // Parse JSON request bodies
 app.use(express.json());
@@ -66,6 +83,16 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // ===== Routes =====
+
+// Metrics Endpoint
+app.get('/metrics', async (req: Request, res: Response) => {
+    try {
+        res.set('Content-Type', metricsContentType);
+        res.end(await getMetrics());
+    } catch (ex) {
+        res.status(500).end(ex);
+    }
+});
 
 // Health check endpoint
 app.get('/', (req: Request, res: Response) => {
@@ -104,49 +131,44 @@ app.delete('/api/comments/:id', authMiddleware, commentController.deleteComment)
 
 // ===== Error Handling =====
 
+import { notFoundHandler, errorHandler } from './middlewares/error.middleware';
+
 // 404 Not Found handler
-app.use((req: Request, res: Response) => {
-    res.status(404).json({
-        error: 'Not Found',
-        message: `Route ${req.method} ${req.path} not found`
-    });
-});
+app.use(notFoundHandler);
 
 // Global error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error('❌ Error:', err.message);
-    res.status(500).json({
-        error: 'Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-    });
-});
+app.use(errorHandler);
 
 // ===== Start Server =====
 
-app.listen(PORT, () => {
-    console.log('========================================');
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`📅 Started at: ${new Date().toISOString()}`);
-    console.log('========================================');
+// Only start server if not testing
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log('========================================');
+        console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        console.log(`📅 Started at: ${new Date().toISOString()}`);
+        console.log('========================================');
 
-    // Initialize Redis (optional - will work without it)
-    try {
-        const redisClient = initRedis();
-        redisClient.connect().then(() => {
-            console.log('📦 Redis: Connected');
-        }).catch(() => {
+        // Initialize Redis (optional - will work without it)
+        try {
+            const redisClient = initRedis();
+            redisClient.connect().then(() => {
+                console.log('📦 Redis: Connected');
+            }).catch(() => {
+                console.log('📦 Redis: Not available (caching disabled)');
+            });
+        } catch (err) {
             console.log('📦 Redis: Not available (caching disabled)');
-        });
-    } catch (err) {
-        console.log('📦 Redis: Not available (caching disabled)');
-    }
+        }
 
-    console.log('📍 Available endpoints:');
-    console.log('   GET  /                  - Health check');
-    console.log('   POST /api/auth/register - User registration');
-    console.log('   POST /api/auth/login    - User login');
-    console.log('   GET  /api/auth/me       - Get current user (Protected)');
-    console.log('========================================');
-});
+        console.log('📍 Available endpoints:');
+        console.log('   GET  /                  - Health check');
+        console.log('   POST /api/auth/register - User registration');
+        console.log('   POST /api/auth/login    - User login');
+        console.log('   GET  /api/auth/me       - Get current user (Protected)');
+        console.log('   POST /api/auth/refresh  - Refresh access token');
+        console.log('========================================');
+    });
+}
 
 export default app;

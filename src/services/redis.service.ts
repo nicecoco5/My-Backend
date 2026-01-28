@@ -4,6 +4,7 @@
  */
 
 import Redis from 'ioredis';
+import logger from '../utils/logger';
 
 // Redis connection instance
 let redis: Redis | null = null;
@@ -22,19 +23,29 @@ export const initRedis = (): Redis => {
     redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         lazyConnect: true,
-        enableReadyCheck: true
+        enableReadyCheck: true,
+        // Retry strategy: wait 50ms, 100ms, 150ms... up to 3s
+        retryStrategy: (times) => {
+            const delay = Math.min(times * 50, 3000);
+            return delay;
+        }
     });
 
     redis.on('connect', () => {
-        console.log('✅ Redis connected successfully');
+        logger.info('✅ Redis connected successfully');
     });
 
     redis.on('error', (err) => {
-        console.error('❌ Redis connection error:', err.message);
+        // Prevent flooding logs with connection refused if Redis is down
+        if (err.message.includes('ECONNREFUSED')) {
+            logger.warn('❌ Redis connection refused (Is Redis running?)');
+        } else {
+            logger.error(`❌ Redis connection error: ${err.message}`);
+        }
     });
 
     redis.on('close', () => {
-        console.log('🔌 Redis connection closed');
+        logger.warn('🔌 Redis connection closed');
     });
 
     return redis;
@@ -65,7 +76,7 @@ export const cacheGet = async <T>(key: string): Promise<T | null> => {
         if (!data) return null;
         return JSON.parse(data) as T;
     } catch (error) {
-        console.error('❌ Cache get error:', error);
+        logger.error(`❌ Cache get error for key ${key}: ${error instanceof Error ? error.message : String(error)}`);
         return null;
     }
 };
@@ -80,7 +91,7 @@ export const cacheSet = async <T>(key: string, value: T, ttl: number = DEFAULT_T
         await redis.setex(key, ttl, JSON.stringify(value));
         return true;
     } catch (error) {
-        console.error('❌ Cache set error:', error);
+        logger.error(`❌ Cache set error for key ${key}: ${error instanceof Error ? error.message : String(error)}`);
         return false;
     }
 };
@@ -95,7 +106,7 @@ export const cacheDel = async (key: string): Promise<boolean> => {
         await redis.del(key);
         return true;
     } catch (error) {
-        console.error('❌ Cache delete error:', error);
+        logger.error(`❌ Cache delete error for key ${key}: ${error instanceof Error ? error.message : String(error)}`);
         return false;
     }
 };
@@ -110,10 +121,11 @@ export const cacheDelPattern = async (pattern: string): Promise<boolean> => {
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
             await redis.del(...keys);
+            logger.info(`🧹 Cleared ${keys.length} keys matching pattern: ${pattern}`);
         }
         return true;
     } catch (error) {
-        console.error('❌ Cache delete pattern error:', error);
+        logger.error(`❌ Cache delete pattern error: ${error instanceof Error ? error.message : String(error)}`);
         return false;
     }
 };

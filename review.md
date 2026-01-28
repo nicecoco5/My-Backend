@@ -893,6 +893,11 @@ KAKAO_CLIENT_SECRET="your-kakao-client-secret"
 | 16 | 소셜 로그인 | ✅ |
 | 17 | GitHub 배포 | ✅ |
 | 17 | 알림 시스템 | ✅ |
+| 18 | CI/CD (GitHub Actions) | ✅ |
+| 19 | 로깅 시스템 (Winston) | ✅ |
+| 20 | 보안 강화 (Helmet/HPP) | ✅ |
+| 21 | Redis & Rate Limiter 고도화 | ✅ |
+| 22 | 단위 테스트 (Jest) | ✅ |
 
 ### 📂 GitHub Repository
 **URL**: [https://github.com/nicecoco5/My-Backend](https://github.com/nicecoco5/My-Backend)
@@ -962,3 +967,67 @@ npm run docker:down    # 컨테이너 정지
 - URL: http://localhost:3000/api-docs
 - 총 9개 태그, 33개 엔드포인트 문서화
 
+### 📝 상세 구현 로그 (2026-01-28 추가)
+
+#### Phase 17: 알림 시스템
+- **Database**: `Notification` 모델 추가 (Recipient, Sender, Type, PostId)
+- **Service**: 알림 생성(Create), 조회(List), 읽음 처리(MarkAsRead), 삭제(Delete) 구현
+- **Trigger**: 댓글 작성 및 좋아요 발생 시 자동으로 알림 생성되는 로직 연동 (`comment.service.ts`, `like.service.ts`)
+- **API**: `/api/notifications` 엔드포인트 구현
+
+#### Phase 18: CI/CD (GitHub Actions)
+- **Workflow**: `.github/workflows/ci.yml` 생성
+- **Jobs**: `push` 및 `pull_request` 트리거 시 `npm ci`, `prisma generate`, `npm run build` 자동 실행
+- **Status**: 로컬 구성 완료, GitHub 권한 문제로 워크플로우 파일 제외하고 코드 푸시 완료
+
+#### Phase 19: 로깅 시스템 (Winston)
+- **Library**: `winston`, `winston-daily-rotate-file` 도입
+- **Features**:
+  - 날짜별 로그 파일 자동 생성 및 회전 (`logs/YYYY-MM-DD.log`)
+  - 에러 로그 별도 관리 (`logs/error/`)
+  - `morgan` 미들웨어와 연동하여 HTTP 요청 로깅
+  - 개발 환경(Console)과 운영 환경(File) 출력 분리
+
+#### Phase 20: 보안 강화 (Security Hardening)
+- **Middleware**:
+  - `helmet`: 15가지 보안 헤더 자동 설정 (XSS, Clickjacking 방지)
+  - `hpp`: HTTP Parameter Pollution 방지
+- **Verification**: 응답 헤더 검증 완료 (`Verification` 단계에서 curl 테스트 통과)
+
+#### Phase 21: Redis & Rate Limiter 고도화
+- **Stabilization**: `redis.service.ts`에 재연결 로직(Retry Strategy) 추가 및 로그 개선 (Winston 연동)
+- **Rate Limiter**:
+  - `rate-limiter-flexible` 라이브러리 도입
+  - **Failover**: Redis 연결 실패 시 자동으로 Memory 모드로 전환되어 서비스 중단 방지
+  - **Rules**: Auth(1시간 10회), API(15분 100회)
+
+#### Phase 22: 단위 테스트 (Unit Testing)
+- **Setup**: `Jest` + `ts-jest` 환경 구축
+- **Test Cases**:
+  - **Validators**: 이메일 및 비밀번호 검증 로직 테스트 (정상/오류 케이스)
+  - **Auth Middleware**: `jsonwebtoken` 및 `Prisma` Mocking을 통한 격리된 테스트 구현 (Token 미포함, 만료, 유효 토큰 등)
+- **Result**: 13개 테스트 케이스 전원 통과 (Pass)
+
+#### Phase 23: 테스트 커버리지 확대 (E2E & Service)
+- **Library**: `supertest` 도입
+- **E2E Testing**: `src/tests/e2e/auth.test.ts`
+  - `request(app)`을 사용하여 `POST /api/auth/register` API 호출 테스트
+  - **Mocking**: Prisma, Redis, Email Service를 Mocking하여 외부 의존성 없이 로직 흐름 검증
+- **Service Testing**: `src/services/__tests__/post.service.test.ts`
+  - `createPost` 시 Redis 캐시 무효화 패턴(`posts:*`) 호출 여부 검증
+- **Coverage**: 총 16개 테스트 케이스 통과 (Unit + Service + E2E)
+
+#### Phase 24: 환경변수 검증 (Environment Validation)
+- **Library**: `zod` 도입
+- **Validation**: `src/config/env.validator.ts` 구현
+  - 앱 시작 시 `.env` 로드 후 필수 환경 변수(`DATABASE_URL`, `JWT_SECRET` 등)의 존재 여부 및 형식 검증
+  - 실패 시 에러 로그 출력 후 프로세스 즉시 종료 (`process.exit(1)`)
+  - **Exception**: 테스트 환경(`NODE_ENV=test`)에서는 검증 스킵 처리하여 CI/CD 안정성 확보
+
+#### Phase 25: 성능 모니터링 (Performance Monitoring)
+- **Library**: `prom-client` 도입
+- **Middleware**: `src/middlewares/metrics.middleware.ts`
+  - `http_request_duration_seconds` (Histogram) 메트릭 수집
+  - Labels: `method`, `route` (Cardinality 제어 적용), `status_code`
+- **Endpoint**: `GET /metrics` (Prometheus Scrape Target)
+  - `metricsContentType` 헤더와 함께 메트릭 데이터 반환

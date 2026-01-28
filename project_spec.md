@@ -2,7 +2,16 @@
 
 ## 1. Project Overview* **Goal:** Build a secure user authentication (Sign-up/Login) and community backend system. * **Core Value:** Security-first approach, Type safety, and Scalability.  
 
-## 2. Tech Stack* **Language:** TypeScript * **Runtime:** Node.js * **Framework:** Express.js * **ORM:** Prisma v6 * **Database:** Supabase (PostgreSQL) * **Auth:** JWT (JSON Web Token) * **Security:** bcryptjs (Password Hashing) 
+## 2. Tech Stack
+* **Language:** TypeScript
+* **Runtime:** Node.js
+* **Framework:** Express.js
+* **ORM:** Prisma v6
+* **Database:** Supabase (PostgreSQL)
+* **Auth:** JWT, Zod
+* **Security:** bcryptjs, helmet, rate-limiter
+* **Testing:** Jest, Supertest
+* **Monitoring:** winston, prom-client 
 
 ## 3. Database Schema (Prisma) The following schema must be used. Note the UUID for ID and Unique constraints.  ```prisma model User { id        String   @id @default(uuid()) email     String   @unique password  String   // Encrypted string nickname  String?  @unique createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
 
@@ -69,6 +78,35 @@ prisma/
 
 **Response:** 200 OK (return Token and user info excluding password)
 
+### 5.10. Notification System
+- **Trigger:** Comment creation, Post Like
+- **Endpoints:**
+  - `GET /api/notifications`: List user notifications (Pagination)
+  - `PATCH /api/notifications/:id/read`: Mark as read
+  - `DELETE /api/notifications/:id`: Delete notification
+- **Logic:**
+  - Do not create notification if sender == recipient
+  - Auto-generated simplified content for preview
+
+### 5.11. logging & Security
+- **Logging:** Winston + Daily Rotate File (logs/ directory)
+  - Combined logs and Error only logs
+  - Morgan stream integration
+- **Security:**
+  - Helmet (Secure HTTP Headers)
+  - HPP (Parameter Pollution Protection)
+  - Rate Limiting (Memory/Redis)
+- **Monitoring:** `prom-client` (Histogram metrics), `/metrics` endpoint
+
+### 5.12. Testing
+- **Framework:** Jest, Supertest
+- **Unit Testing:** Utilities, Middlewares
+- **Integration Testing:** Service Layer, API Endpoints (E2E)
+- **Coverage Goal:** Core logic, Security, Critical paths
+
+### 5.13. Environment
+- **Validation:** `zod` schema check on startup (Fail-fast)
+
 ## 6. Environment Variables (.env)
 
 ```env
@@ -96,7 +134,17 @@ JWT_SECRET="your-secret-key"
 
 ## 9. Additional Packages
 
-| Package | Description | Required |
+| winston | Logging system | Yes |
+| winston-daily-rotate-file | Log file management | Yes |
+| helmet | Security headers | Yes |
+| hpp | HTTP Parameter Pollution protection | Yes |
+| morgan | HTTP request logger | Yes |
+| passport-github2 | GitHub OAuth | Yes |
+| passport-google-oauth20 | Google OAuth | Yes |
+| rate-limiter-flexible | Redis-based Rate Limiter | Yes |
+| jest | Testing Framework | Yes |
+| ts-jest | TypeScript Preprocessor for Jest | Yes |
+| package | Description | Required |
 |---------|-------------|----------|
 | `dotenv` | Load environment variables from `.env` file | ✅ Essential |
 | `cors` | Enable CORS for frontend connection | ✅ Recommended |
