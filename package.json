@@ -1,0 +1,73 @@
+{
+    "name": "my-backend",
+    "version": "1.0.0",
+    "description": "Secure Backend System with User Authentication",
+    "main": "dist/app.js",
+    "scripts": {
+        "dev": "nodemon --exec ts-node src/app.ts",
+        "build": "tsc",
+        "start": "node dist/app.js",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev",
+        "prisma:deploy": "prisma migrate deploy",
+        "docker:build": "docker build -t my-backend .",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "docker:logs": "docker-compose logs -f api",
+        "docker:clean": "docker-compose down -v --rmi local"
+    },
+    "keywords": [
+        "backend",
+        "express",
+        "typescript",
+        "prisma",
+        "authentication"
+    ],
+    "author": "",
+    "license": "ISC",
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.0.0",
+        "@types/multer": "^2.0.0",
+        "@types/node-cron": "^3.0.11",
+        "bcryptjs": "^3.0.3",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "dotenv": "^17.2.3",
+        "express": "^5.2.1",
+        "express-rate-limit": "^8.2.1",
+        "ioredis": "^5.9.2",
+        "jsonwebtoken": "^9.0.3",
+        "morgan": "^1.10.1",
+        "multer": "^2.0.2",
+        "node-cron": "^4.2.1",
+        "nodemailer": "^7.0.12",
+        "passport": "^0.7.0",
+        "passport-google-oauth20": "^2.0.0",
+        "passport-kakao": "^1.0.1",
+        "rate-limit-redis": "^4.3.1",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
+        "@types/cookie-parser": "^1.4.10",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/morgan": "^1.9.10",
+        "@types/node": "^25.0.10",
+        "@types/nodemailer": "^7.0.9",
+        "@types/passport": "^1.0.17",
+        "@types/passport-google-oauth20": "^2.0.17",
+        "@types/passport-kakao": "^1.0.3",
+        "@types/swagger-jsdoc": "^6.0.4",
+        "@types/swagger-ui-express": "^4.1.8",
+        "nodemon": "^3.1.11",
+        "prisma": "^6.0.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3"
+    }
+}

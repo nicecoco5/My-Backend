@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Development files
+*.md
+!README.md
+*.log
+.env.local
+.env.development
+.env.test
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker
+
+# Tests
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# MacOS
+.DS_Store
+
+# Uploads (will be mounted as volume)
+src/uploads/*
+!src/uploads/.gitkeep
+
+# Prisma generated client (will be regenerated)
+# node_modules/.prisma
+
+# Temporary files
+*.tmp
+*.temp
